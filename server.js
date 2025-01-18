@@ -11,7 +11,7 @@ const server = http.createServer(app);
 // Set up Socket.IO with CORS configuration
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Allow this origin to connect
+    origin: ["http://localhost:3000", "https://livechat-lake.vercel.app"], // Allow multiple origins
     methods: ["GET", "POST"],
   },
 });
@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
   socket.on('chatMessage', (room, msg) => {
     console.log(`Received message in room ${room}: ${msg}`);
     // Emit to all clients in the room except the sender
-    socket.to(room).emit('chatMessage', msg); // This will send the message to other users in the room
+    socket.to(room).emit('chatMessage', msg);
   });
 
   // When the user disconnects
