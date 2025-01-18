@@ -76,17 +76,10 @@ export default function ChatPage() {
         timestamp: new Date().toLocaleTimeString(),
       };
 
-      // Emit the message to the server
+      // Emit the message to the server, do not update local state directly
       socket.emit('chatMessage', room, userMessage);
 
-      // Update the local messages state
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages, userMessage];
-        localStorage.setItem(`messages-${room}`, JSON.stringify(updatedMessages));
-        return updatedMessages;
-      });
-
-      setMessage('');
+      setMessage(''); // Clear the input field
     }
   };
 
