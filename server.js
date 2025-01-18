@@ -16,6 +16,11 @@ const io = socketIo(server, {
   },
 });
 
+// Example route for /
+app.get('/', (req, res) => {
+  res.send('Welcome to the chat application!');
+});
+
 // Example route for /hi
 app.get('/hi', (req, res) => {
   res.send('Hello! Welcome to the chat application.');
@@ -44,7 +49,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
-server.listen(3001, () => {
-  console.log('Socket.IO server running on http://localhost:3001');
+// Use the PORT environment variable or default to 3001
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Socket.IO server running on http://localhost:${PORT}`);
 });

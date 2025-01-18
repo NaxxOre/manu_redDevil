@@ -11,7 +11,7 @@ export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [username, setUsername] = useState('');
-  const messagesEndRef = useRef(null); // Reference to the end of the messages container
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const userName = localStorage.getItem('username');
@@ -29,7 +29,11 @@ export default function ChatPage() {
 
     const savedMessages = localStorage.getItem(`messages-${room}`);
     if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (error) {
+        console.error('Error parsing saved messages:', error);
+      }
     }
 
     socket.on('chatMessage', (msg) => {
@@ -46,7 +50,7 @@ export default function ChatPage() {
   }, [room]);
 
   useEffect(() => {
-    scrollToBottom(); // Scroll to the bottom whenever messages change
+    scrollToBottom();
   }, [messages]);
 
   const scrollToBottom = () => {
