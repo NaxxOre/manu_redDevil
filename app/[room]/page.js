@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [username, setUsername] = useState('');
   const messagesEndRef = useRef(null);
 
+  // Handle loading and saving username and messages
   useEffect(() => {
     const userName = localStorage.getItem('username');
     if (!userName) {
@@ -23,10 +24,26 @@ export default function ChatPage() {
       setUsername(userName);
     }
 
+    // Join the room
     if (room) {
       socket.emit('joinRoom', room);
     }
 
+    // Listen for previous messages when a new user joins
+    socket.on('previousMessages', (previousMessages) => {
+      setMessages(previousMessages);
+    });
+
+    // Listen for new messages
+    socket.on('chatMessage', (msg) => {
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, msg];
+        localStorage.setItem(`messages-${room}`, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+    });
+
+    // Retrieve saved messages from local storage for the room
     const savedMessages = localStorage.getItem(`messages-${room}`);
     if (savedMessages) {
       try {
@@ -36,16 +53,9 @@ export default function ChatPage() {
       }
     }
 
-    socket.on('chatMessage', (msg) => {
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages, msg];
-        localStorage.setItem(`messages-${room}`, JSON.stringify(updatedMessages));
-        return updatedMessages;
-      });
-    });
-
     return () => {
       socket.off('chatMessage');
+      socket.off('previousMessages');
     };
   }, [room]);
 
@@ -66,12 +76,16 @@ export default function ChatPage() {
         timestamp: new Date().toLocaleTimeString(),
       };
 
+      // Emit the message to the server
       socket.emit('chatMessage', room, userMessage);
+
+      // Update the local messages state
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, userMessage];
         localStorage.setItem(`messages-${room}`, JSON.stringify(updatedMessages));
         return updatedMessages;
       });
+
       setMessage('');
     }
   };
