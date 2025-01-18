@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3001');
+const socket = io('https://livechat-bseg.onrender.com');
 
 export default function ChatPage() {
   const { room } = useParams();
