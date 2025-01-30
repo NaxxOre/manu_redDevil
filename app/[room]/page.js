@@ -6,7 +6,7 @@ import io from 'socket.io-client';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 
-const socket = io('https://livechat-bseg.onrender.com');
+const socket = io('https://manu-reddevil.onrender.com');
 
 export default function ChatPage() {
   const { room } = useParams();
