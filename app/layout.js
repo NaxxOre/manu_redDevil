@@ -5,10 +5,10 @@ export default function ChatLayout({ children }) {
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Live Chat Application</title>
+        <title>Manu Live</title>
       </head>
       <body>
-        <h1>Live Chat Application</h1>
+        <h1>FCSB Vs Manchester United</h1>
         {children}
       </body>
     </html>

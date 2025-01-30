@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import io from 'socket.io-client';
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
 
 const socket = io('https://livechat-bseg.onrender.com');
 
@@ -12,8 +14,20 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [username, setUsername] = useState('');
   const messagesEndRef = useRef(null);
+  const videoRef = useRef(null);
+  const [videoPlayer, setVideoPlayer] = useState(null);
+  const [currentVideo, setCurrentVideo] = useState(
+    'http://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium31%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2' // Default to Link 1
+  );
 
-  // Handle loading and saving username and messages
+  const videoLinks = [
+    { id: 1, url: 'http://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium31%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 1' },
+    { id: 2, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium474%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 2' },
+    { id: 3, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium400%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 3' },
+    { id: 4, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium622%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 4' },
+    { id: 5, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium122%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 5' },
+  ];
+
   useEffect(() => {
     const userName = localStorage.getItem('username');
     if (!userName) {
@@ -24,17 +38,14 @@ export default function ChatPage() {
       setUsername(userName);
     }
 
-    // Join the room
     if (room) {
       socket.emit('joinRoom', room);
     }
 
-    // Listen for previous messages when a new user joins
     socket.on('previousMessages', (previousMessages) => {
       setMessages(previousMessages);
     });
 
-    // Listen for new messages
     socket.on('chatMessage', (msg) => {
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, msg];
@@ -43,7 +54,6 @@ export default function ChatPage() {
       });
     });
 
-    // Retrieve saved messages from local storage for the room
     const savedMessages = localStorage.getItem(`messages-${room}`);
     if (savedMessages) {
       try {
@@ -63,6 +73,30 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      if (videoPlayer) {
+        videoPlayer.src({ src: currentVideo, type: 'application/x-mpegURL' });
+      } else {
+        const player = videojs(videoRef.current, {
+          controls: true,
+          autoplay: true, // Ensure autoplay is enabled
+          responsive: true,
+          fluid: true, // Ensures correct resizing
+        });
+        setVideoPlayer(player);
+      }
+    }
+  }, [currentVideo]);
+
+  useEffect(() => {
+    // Ensures autoplay works on page load with default video URL
+    if (videoPlayer && currentVideo) {
+      videoPlayer.src({ src: currentVideo, type: 'application/x-mpegURL' });
+      videoPlayer.play();
+    }
+  }, [videoPlayer, currentVideo]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -76,92 +110,148 @@ export default function ChatPage() {
         timestamp: new Date().toLocaleTimeString(),
       };
 
-      // Emit the message to the server, do not update local state directly
       socket.emit('chatMessage', room, userMessage);
-
-      setMessage(''); // Clear the input field
+      setMessage('');
     }
   };
 
   return (
-    <div style={{ backgroundColor: '#1f1f1f', color: 'white', minHeight: '100vh', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#fff' }}>Live Chat - Room: {room}</h1>
+    <div
+      style={{
+        backgroundColor: '#1f1f1f',
+        color: 'white',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '10px', // Reduced padding for smaller screens
+      }}
+    >
+      {/* Video + Chat Section */}
       <div
         style={{
-          padding: '10px',
-          maxWidth: '800px',
-          margin: 'auto',
-          overflowY: 'auto',
-          maxHeight: '600px',
-          border: '1px solid #333',
-          borderRadius: '8px',
-          backgroundColor: '#292929',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          width: '100%',
+          maxWidth: '1200px',
+          gap: '15px', // Reduced gap for smaller screens
+          justifyContent: 'center', // Center the video and chat on mobile
         }}
       >
-        {messages.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#bbb' }}>No messages yet. Be the first to send one!</p>
-        ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
+        {/* Video Player */}
+        <div style={{ flex: 1, minWidth: '280px', textAlign: 'center' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>Live Stream</h2>
+          <a href='https://t.me/utdzn'>Join our Telegram Channel</a>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <video ref={videoRef} className="video-js vjs-default-skin" style={{ width: '100%', borderRadius: '8px' }} />
+          </div>
+
+          {/* Video Selection Buttons */}
+          <div style={{ marginTop: '10px', textAlign: 'center' }}>
+            {videoLinks.map((video) => (
+              <button
+                key={video.id}
+                onClick={() => setCurrentVideo(video.url)}
+                style={{
+                  margin: '5px',
+                  padding: '8px 12px',
+                  borderRadius: '5px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: currentVideo === video.url ? '#da291c' : '#a8a8a8', // Set background red
+                  color: 'white',
+                  fontSize: '12px', // Smaller font size for smaller devices
+                  transition: 'background-color 0.3s', // Smooth transition
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#e74c3c')} // Hover effect
+                onMouseLeave={(e) => (e.target.style.backgroundColor = currentVideo === video.url ? '#da291c' : '#a8a8a8')} // Reset background color
+              >
+                {video.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Chat Section */}
+        <div style={{ flex: 1, minWidth: '280px', textAlign: 'center' }}>
+          <h2 style={{ textAlign: 'center' }}>Live Chat - Room: {room}</h2>
+          <div
+            style={{
+              padding: '8px',
+              overflowY: 'auto',
+              maxHeight: '300px', // Fixed height for the chat box
+              border: '1px solid #333',
+              borderRadius: '8px',
+              backgroundColor: '#292929',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            {messages.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#bbb' }}>No messages yet. Be the first to send one!</p>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  style={{
+                    margin: '5px 0',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: msg.user === username ? '#e74c3c' : '#444',
+                    color: '#fff',
+                    textAlign: 'left',
+                    fontSize: '14px',
+                    maxWidth: '80%',
+                    wordWrap: 'break-word',
+                    marginLeft: msg.user === username ? 'auto' : '0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <strong>{msg.user}</strong>
+                  <p>{msg.text}</p>
+                  <small style={{ color: '#bbb', fontSize: '12px' }}>{msg.timestamp}</small>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', marginTop: '10px', justifyContent: 'center' }}>
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type a message..."
               style={{
-                margin: '10px 0',
-                padding: '10px',
-                borderRadius: '8px',
-                backgroundColor: msg.user === username ? '#007bff' : '#444',
-                color: '#fff',
-                alignSelf: msg.user === username ? 'flex-end' : 'flex-start',
-                display: 'flex',
-                flexDirection: 'column',
-                maxWidth: '60%',
-                wordWrap: 'break-word',
-                marginLeft: msg.user === username ? 'auto' : '0',
-                marginRight: msg.user === username ? '0' : 'auto',
-                textAlign: msg.user === username ? 'right' : 'left',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                width: '80%',
+                padding: '8px 12px',
+                borderRadius: '5px',
+                border: '1px solid #444',
+                backgroundColor: '#333',
+                color: 'white',
+                fontSize: '14px',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                padding: '8px 12px',
+                marginLeft: '10px',
+                borderRadius: '5px',
+                backgroundColor: '#c0392b',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
               }}
             >
-              <strong style={{ fontSize: '14px' }}>{msg.user}</strong>
-              <p style={{ fontSize: '16px' }}>{msg.text}</p>
-              <small style={{ fontSize: '12px', color: '#bbb' }}>{msg.timestamp}</small>
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
+              Send
+            </button>
+          </form>
+        </div>
       </div>
-
-      <form onSubmit={handleSubmit} style={{ display: 'flex', marginTop: '10px', justifyContent: 'center' }}>
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          style={{
-            flexGrow: 1,
-            padding: '10px',
-            fontSize: '16px',
-            borderRadius: '5px',
-            border: '1px solid #444',
-            marginRight: '10px',
-            backgroundColor: '#333',
-            color: '#fff',
-          }}
-        />
-        <button
-          type="submit"
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-          }}
-        >
-          Send
-        </button>
-      </form>
     </div>
   );
 }

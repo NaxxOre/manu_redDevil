@@ -31,7 +31,7 @@ export default function HomePage() {
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Create a Chat Room</h1>
+      <h1>Enter any room</h1>
       
       {/* Username input field */}
       <div style={{ marginBottom: '20px' }}>
