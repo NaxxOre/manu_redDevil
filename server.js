@@ -11,7 +11,7 @@ const server = http.createServer(app);
 // Set up Socket.IO with CORS configuration
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "https://united-red-devil.vercel.app/"], // Allow multiple origins
+    origin: ["http://localhost:3000", "https://united-red-devil.vercel.app"], // Allow multiple origins
     methods: ["GET", "POST"],
   },
 });
