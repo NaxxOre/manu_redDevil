@@ -8,7 +8,7 @@ export default function ChatLayout({ children }) {
         <title>Manu Live</title>
       </head>
       <body>
-        <h1>Manchester United VS Crystal Palace</h1>
+        <h1>Manchester United VS Leicester</h1>
         {children}
       </body>
     </html>
