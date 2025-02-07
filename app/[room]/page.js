@@ -5,9 +5,14 @@ import { useParams } from 'next/navigation';
 import io from 'socket.io-client';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
+import 'videojs-contrib-hls'; // Ensures proper HLS playback
 
-
-const socket = io('https://manu-reddevil-3.onrender.com');
+const socket = io('https://manu-reddevil-3.onrender.com', {
+  transports: ['websocket'],
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+});
 
 export default function ChatPage() {
   const { room } = useParams();
@@ -16,17 +21,18 @@ export default function ChatPage() {
   const [username, setUsername] = useState('');
   const messagesEndRef = useRef(null);
   const videoRef = useRef(null);
+  const playerRef = useRef(null);
   const [videoPlayer, setVideoPlayer] = useState(null);
   const [currentVideo, setCurrentVideo] = useState(
-    'https://pull.niur.live/live/stream-9912093_lhd.m3u8?txSecret=6cd64c3d9d25983f1bcbb6b62972e2c6&txTime=679fccc8' // Default to Link 1
+    'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium591%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2'
   );
 
   const videoLinks = [
-    { id: 1, url: 'https://pull.niur.live/live/stream-9912093_lhd.m3u8?txSecret=6cd64c3d9d25983f1bcbb6b62972e2c6&txTime=679fccc8', label: 'Link 1' },
-    { id: 2, url: 'https://pull.niur.live/live/stream-9912093_lsd.m3u8?txSecret=d4119a83af2922d551f62e81e25c3377&txTime=679fccc8', label: 'Link 2' },
-    { id: 3, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium585%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 3' },
-    { id: 4, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium556%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 4' },
-    { id: 5, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium556%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 5' },
+    { id: 1, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium591%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 1' },
+    { id: 2, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium81%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 2' },
+    { id: 3, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium432%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM28', label: 'Link 3' },
+    { id: 4, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium410%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 4' },
+    { id: 5, url: 'https://m3u-playlist-proxy-2.vercel.app?url=https%3A%2F%2Fxyzdddd.mizhls.ru%2Flb%2Fpremium414%2Findex.m3u8&data=UmVmZXJlcj1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3xPcmlnaW49aHR0cHM6Ly9jb29raWV3ZWJwbGF5Lnh5enxVc2VyLUFnZW50PU1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyOS4wLjAuMCBTYWZhcmkvNTM3LjM2', label: 'Link 5' },
   ];
 
   useEffect(() => {
@@ -38,219 +44,104 @@ export default function ChatPage() {
     } else {
       setUsername(userName);
     }
+  }, []);
 
+  useEffect(() => {
     if (room) {
       socket.emit('joinRoom', room);
     }
 
-    socket.on('previousMessages', (previousMessages) => {
+    const messageHandler = (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    };
+
+    const previousMessagesHandler = (previousMessages) => {
       setMessages(previousMessages);
-    });
+    };
 
-    socket.on('chatMessage', (msg) => {
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages, msg];
-        localStorage.setItem(`messages-${room}`, JSON.stringify(updatedMessages));
-        return updatedMessages;
-      });
-    });
-
-    const savedMessages = localStorage.getItem(`messages-${room}`);
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (error) {
-        console.error('Error parsing saved messages:', error);
-      }
-    }
+    socket.on('previousMessages', previousMessagesHandler);
+    socket.on('chatMessage', messageHandler);
 
     return () => {
-      socket.off('chatMessage');
-      socket.off('previousMessages');
+      socket.off('chatMessage', messageHandler);
+      socket.off('previousMessages', previousMessagesHandler);
     };
   }, [room]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    if (videoRef.current) {
-      if (videoPlayer) {
-        videoPlayer.src({ src: currentVideo, type: 'application/x-mpegURL' });
-      } else {
-        const player = videojs(videoRef.current, {
-          controls: true,
-          autoplay: true, // Ensure autoplay is enabled
-          responsive: true,
-          fluid: true, // Ensures correct resizing
-        });
-        setVideoPlayer(player);
+    if (!videoRef.current) return;
+
+    if (playerRef.current) {
+      playerRef.current.dispose(); // Destroy previous instance before creating a new one
+    }
+
+    playerRef.current = videojs(videoRef.current, {
+      controls: true,
+      autoplay: 'muted', // Avoid autoplay errors
+      responsive: true,
+      fluid: true,
+      html5: {
+        hls: {
+          withCredentials: false, // Fix CORS issue
+        },
+      },
+    });
+
+    // Ensure valid video source
+    if (currentVideo) {
+      playerRef.current.src({ src: currentVideo, type: 'application/x-mpegURL' });
+
+      playerRef.current.ready(() => {
+        playerRef.current.play().catch((error) => console.warn('Autoplay prevented:', error));
+      });
+    }
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.dispose();
+        playerRef.current = null;
       }
-    }
+    };
   }, [currentVideo]);
-
-  useEffect(() => {
-    // Ensures autoplay works on page load with default video URL
-    if (videoPlayer && currentVideo) {
-      videoPlayer.src({ src: currentVideo, type: 'application/x-mpegURL' });
-      videoPlayer.play();
-    }
-  }, [videoPlayer, currentVideo]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim() && room) {
-      const userMessage = {
-        text: message,
-        user: username,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      socket.emit('chatMessage', room, userMessage);
+      socket.emit('chatMessage', room, { text: message, user: username, timestamp: new Date().toLocaleTimeString() });
       setMessage('');
     }
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: '#1f1f1f',
-        color: 'white',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '10px', // Reduced padding for smaller screens
-      }}
-    >
-      {/* Video + Chat Section */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          width: '100%',
-          maxWidth: '1200px',
-          gap: '15px', // Reduced gap for smaller screens
-          justifyContent: 'center', // Center the video and chat on mobile
-        }}
-      >
-        {/* Video Player */}
+    <div style={{ backgroundColor: '#1f1f1f', color: 'white', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', width: '100%', maxWidth: '1200px', gap: '15px', justifyContent: 'center' }}>
         <div style={{ flex: 1, minWidth: '280px', textAlign: 'center' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>Live Stream</h2>
-          <a href='https://t.me/utdzn'>Join our Telegram Channel</a>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <video ref={videoRef} className="video-js vjs-default-skin" style={{ width: '100%', borderRadius: '8px' }} />
-          </div>
-
-          {/* Video Selection Buttons */}
-          <div style={{ marginTop: '10px', textAlign: 'center' }}>
-            {videoLinks.map((video) => (
+          <h2>Live Stream</h2>
+          <video ref={videoRef} className="video-js vjs-default-skin" style={{ width: '100%', borderRadius: '8px' }} />
+          <div>
+            <h3>Switch Stream:</h3>
+            {videoLinks.map((link) => (
               <button
-                key={video.id}
-                onClick={() => setCurrentVideo(video.url)}
+                key={link.id}
+                onClick={() => setCurrentVideo(link.url)}
                 style={{
                   margin: '5px',
-                  padding: '8px 12px',
-                  borderRadius: '5px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  backgroundColor: currentVideo === video.url ? '#da291c' : '#a8a8a8', // Set background red
+                  padding: '8px 15px',
+                  backgroundColor: '#ff5722',
                   color: 'white',
-                  fontSize: '12px', // Smaller font size for smaller devices
-                  transition: 'background-color 0.3s', // Smooth transition
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#e74c3c')} // Hover effect
-                onMouseLeave={(e) => (e.target.style.backgroundColor = currentVideo === video.url ? '#da291c' : '#a8a8a8')} // Reset background color
               >
-                {video.label}
+                {link.label}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Chat Section */}
-        <div style={{ flex: 1, minWidth: '280px', textAlign: 'center' }}>
-          <h2 style={{ textAlign: 'center' }}>Live Chat - Room: {room}</h2>
-          <div
-            style={{
-              padding: '8px',
-              overflowY: 'auto',
-              maxHeight: '300px', // Fixed height for the chat box
-              border: '1px solid #333',
-              borderRadius: '8px',
-              backgroundColor: '#292929',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            {messages.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#bbb' }}>No messages yet. Be the first to send one!</p>
-            ) : (
-              messages.map((msg, index) => (
-                <div
-                  key={index}
-                  style={{
-                    margin: '5px 0',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: msg.user === username ? '#e74c3c' : '#444',
-                    color: '#fff',
-                    textAlign: 'left',
-                    fontSize: '14px',
-                    maxWidth: '80%',
-                    wordWrap: 'break-word',
-                    marginLeft: msg.user === username ? 'auto' : '0',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                >
-                  <strong>{msg.user}</strong>
-                  <p>{msg.text}</p>
-                  <small style={{ color: '#bbb', fontSize: '12px' }}>{msg.timestamp}</small>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Chat Input */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', marginTop: '10px', justifyContent: 'center' }}>
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type a message..."
-              style={{
-                width: '80%',
-                padding: '8px 12px',
-                borderRadius: '5px',
-                border: '1px solid #444',
-                backgroundColor: '#333',
-                color: 'white',
-                fontSize: '14px',
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                padding: '8px 12px',
-                marginLeft: '10px',
-                borderRadius: '5px',
-                backgroundColor: '#c0392b',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              Send
-            </button>
-          </form>
         </div>
       </div>
     </div>
